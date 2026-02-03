@@ -1,33 +1,68 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="background:#000; color:#0f0; white-space:pre-wrap; font-family:monospace; padding:20px;">
-<div id="m3u">Gerando Lista M3U...</div>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Playlist M3U</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+</head>
+<body style="background: #000; color: #00ff00; font-family: monospace; white-space: pre-wrap; margin: 0; padding: 20px;">
 
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<div id="m3u">Carregando lista IPTV...</div>
+
 <script>
+    // === CONFIGURAÇÃO DO SEU FIREBASE (IGUAL AO PAINEL) ===
     const firebaseConfig = {
-        apiKey: "AIzaSyACsw-0jVzNPGcX3Dph76jeaaq3TesqWfI",
-        databaseURL: "https://iptv-4f629-default-rtdb.firebaseio.com/",
-        projectId: "iptv-4f629"
+        apiKey: "SUA_API_KEY",
+        databaseURL: "SUA_DATABASE_URL",
+        projectId: "SEU_PROJETO_ID"
     };
 
+    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
-    
-    firebase.database().ref('listas/geral').once('value', snap => {
+    const db = firebase.database();
+
+    // Referência da lista (deve ser a mesma do painel: 'listas/geral')
+    db.ref('listas/geral').once('value', snap => {
         let text = "#EXTM3U\n\n";
-        snap.forEach(child => {
-            const v = child.val();
-            text += `#EXTINF:-1, ${v.titulo}\n`;
-            if(v.ref) text += `#EXTVLCOPT:http-referrer=${v.ref}\n`;
-            text += `#EXTVLCOPT:http-user-agent=${v.ua}\n`;
-            text += `${v.url}\n\n`;
-        });
+        
+        if (snap.exists()) {
+            snap.forEach(child => {
+                const v = child.val();
+                
+                // Estrutura M3U com os headers que você pediu
+                text += `#EXTINF:-1, ${v.titulo}\n`;
+                
+                if(v.ref) {
+                    text += `#EXTVLCOPT:http-referrer=${v.ref}\n`;
+                }
+                
+                // User-agent (usa o do banco ou um padrão)
+                const ua = v.ua || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+                text += `#EXTVLCOPT:http-user-agent=${ua}\n`;
+                
+                // Link final do vídeo
+                text += `${v.url}\n\n`;
+            });
+        } else {
+            text = "#EXTM3U\n# Lista vazia no Firebase";
+        }
+
+        // 1. Exibe o texto na div para conferência visual
         document.getElementById('m3u').innerText = text;
-        // Se quiser que o VLC baixe direto como arquivo:
-        document.title = "playlist.m3u";
+
+        // 2. TENTA LIMPAR O HTML: Deixa apenas o texto puro no body 
+        // Isso ajuda alguns players a não se confundirem com tags HTML
+        document.body.innerHTML = text;
+        
+        // 3. Define o título da página como .m3u para ajudar o player
+        document.title = "lista.m3u";
+
+        console.log("Lista gerada com sucesso!");
+    }).catch(error => {
+        document.getElementById('m3u').innerText = "Erro ao carregar: " + error.message;
     });
 </script>
+
 </body>
 </html>
