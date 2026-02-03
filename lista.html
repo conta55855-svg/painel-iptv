@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="background:#000; color:#0f0; white-space:pre-wrap; font-family:monospace; padding:20px;">
+<div id="m3u">Gerando Lista M3U...</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        databaseURL: "SUA_DATABASE_URL",
+        projectId: "SEU_PROJETO_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    
+    firebase.database().ref('listas/geral').once('value', snap => {
+        let text = "#EXTM3U\n\n";
+        snap.forEach(child => {
+            const v = child.val();
+            text += `#EXTINF:-1, ${v.titulo}\n`;
+            if(v.ref) text += `#EXTVLCOPT:http-referrer=${v.ref}\n`;
+            text += `#EXTVLCOPT:http-user-agent=${v.ua}\n`;
+            text += `${v.url}\n\n`;
+        });
+        document.getElementById('m3u').innerText = text;
+        // Se quiser que o VLC baixe direto como arquivo:
+        document.title = "playlist.m3u";
+    });
+</script>
+</body>
+</html>
